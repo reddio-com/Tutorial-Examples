@@ -1,7 +1,7 @@
 //import relevant modules
 import { ethers } from "ethers";
 import { Reddio } from '@reddio.com/js'
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 
 function App() {
   //define global variables and relevant functions to set the variables by useState hook
@@ -14,7 +14,6 @@ function App() {
     "tokenAmount": 0,
   }
   const [eventValue, setEventValue] = useState(defaultValue);
-
 
   async function connectToWallet() {
     if (typeof window !== 'undefined') {
@@ -46,7 +45,7 @@ function App() {
           //Store them into array
           const { privateKey, publicKey } = await reddio.keypair.generateFromEthSignature();
 
-          //We will set ethAddress/starkKey/privateStarkKey on our array
+          //We will set ethAddress/starkKey/privateKey on our array
           setEventValue({ ...eventValue, ethAddress, starkKey: publicKey, privateKey })
         } catch (error) {
           console.error(error);
@@ -65,72 +64,43 @@ function App() {
         //Your starkKey (public key on layer 2)
         starkKey,
         //Amounts you want to deposit
-        quantizedAmount: Number(tokenAmount),
+        quantizedAmount: tokenAmount,
       });
     }
   }
 
   async function transferETH() {
     if (reddio !== null) {
-      //getting RDD20 token's assetId if reddio object is defined 
-      const { assetId } = await reddio.utils.getAssetTypeAndId({
-        type: "ETH",
-      });
-
       const { starkKey, privateKey, tokenAmount, receiver } = eventValue
       //transfer the amount to another starkKey
-      const { data: res } = await reddio.apis.transfer({
+      const { data } = await reddio.apis.transfer({
         starkKey,
         privateKey,
         amount: tokenAmount,
-        tokenId: assetId,
         type: 'ETH',
         receiver,
       });
-      console.log(res);
-
+      console.log(data);
     }
-
   }
+  
   async function withdrawTokensFromL2() {
     if (reddio !== null) {
-      //Getting reddio's assetId and assetType for the ERC20 token
-      const { assetId } = await reddio.utils.getAssetTypeAndId({
-        type: "ETH",
-      });
-
       const { starkKey, privateKey, tokenAmount, receiver } = eventValue
       //Withdraw tokens from layer 2
       //It will usually take 4 hour to withdraw from layer 2 to withdraw area
-      const { data: res } = await reddio.apis.withdrawalFromL2({
+      const { data } = await reddio.apis.withdrawalFromL2({
         starkKey,
         privateKey,
         amount: tokenAmount,
-        tokenId: assetId,
         type: "ETH",
         receiver,
       });
 
-      console.log(res);
-
+      console.log(data);
     }
   }
-  async function withdrawTokensFromL1() {
-    if (reddio !== null) {
-      //Getting reddio's assetId and assetType for the ETH token
-      const { assetType } = await reddio.utils.getAssetTypeAndId({
-        type: "ETH",
-      });
 
-      //Withdraw tokens from withdraw area on layer 1
-      const res = await reddio.apis.withdrawalFromL1({
-        ethAddress: eventValue.receiver,
-        assetType: assetType,
-        type: 'ETH'
-      })
-      console.log(res);
-    }
-  }
   //when form values starts to change set the values to relevant variables
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target
@@ -179,14 +149,6 @@ function App() {
         <button type="button" onClick={withdrawTokensFromL2}>
           withdraw from L2
         </button>
-
-        <br />
-        <button type="button" onClick={withdrawTokensFromL1}>
-          withdraw from L1
-        </button>
-
-
-
       </header>
     </div>
   );
